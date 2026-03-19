@@ -1,3 +1,4 @@
+console.log("force deploy");
 console.log("CLIENT_ID:", process.env.DISCORD_CLIENT_ID);
 console.log("CLIENT_SECRET:", process.env.DISCORD_CLIENT_SECRET);
 
