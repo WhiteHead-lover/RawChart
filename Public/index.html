@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>규칙</title>
+
+<style>
+body {
+  background:#121212;
+  color:white;
+  font-family:Arial;
+  padding:20px;
+}
+
+.top {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+  align-items:center;
+}
+
+.controls {
+  display:flex;
+  gap:10px;
+}
+
+button, select, input {
+  padding:10px 15px;
+  border-radius:10px;
+  border:none;
+  font-size:14px;
+}
+
+button {
+  background:#4da6ff;
+  color:white;
+  cursor:pointer;
+}
+
+button:hover { background:#3399ff; }
+
+.rule {
+  background:#1e1e1e;
+  padding:20px;
+  margin:10px 0;
+  border-radius:15px;
+  cursor:pointer;
+}
+
+.rule:hover { background:#2a2a2a; }
+
+.profile {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+}
+
+.profile img {
+  width:40px;
+  border-radius:50%;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📜 규칙</h1>
+
+<div class="top">
+  <div class="controls">
+    <button id="writeBtn" style="display:none;" onclick="location.href='write.html'">✏️ 작성</button>
+    <button onclick="login()">로그인</button>
+    <button onclick="logout()">로그아웃</button>
+  </div>
+
+  <div class="controls">
+    <input id="search" placeholder="검색..." oninput="loadRules()">
+    <select id="sort" onchange="loadRules()">
+      <option value="new">최신</option>
+      <option value="old">오래된</option>
+      <option value="az">가나다</option>
+      <option value="za">하파타</option>
+    </select>
+  </div>
+</div>
+
+<div id="profile"></div>
+<div id="ruleList"></div>
+
+<script>
+const ADMIN = "noob_love.";
+
+function login(){ location.href="/auth/discord"; }
+function logout(){ location.href="/logout"; }
+
+async function loadUser(){
+  const res = await fetch("/me");
+  const user = await res.json();
+
+  if(user){
+    const avatar = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+
+    document.getElementById("profile").innerHTML = `
+      <div class="profile">
+        <img src="${avatar}">
+        ${user.username} (${user.id})
+      </div>
+    `;
+
+    if(user.username === ADMIN){
+      document.getElementById("writeBtn").style.display="inline";
+    }
+  }
+}
+
+async function loadRules(){
+  const search = document.getElementById("search").value;
+  const sort = document.getElementById("sort").value;
+
+  const res = await fetch("/rules?search="+search);
+  let rules = await res.json();
+
+  // 🔥 정렬 복구
+  if(sort==="new") rules.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(sort==="old") rules.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  if(sort==="az") rules.sort((a,b)=>a.title.localeCompare(b.title));
+  if(sort==="za") rules.sort((a,b)=>b.title.localeCompare(a.title));
+
+  const list = document.getElementById("ruleList");
+  list.innerHTML="";
+
+  rules.forEach(r=>{
+    const div = document.createElement("div");
+    div.className="rule";
+
+    div.innerHTML = `
+      <b>${r.title}</b><br>
+      <span style="font-size:12px;color:gray;">
+        작성: ${new Date(r.created_at).toLocaleDateString()}
+        | 수정: ${new Date(r.updated_at).toLocaleDateString()}
+        | 수정횟수: ${r.edit_count}
+      </span>
+    `;
+
+    div.onclick=()=>location.href="detail.html?id="+r.id;
+
+    list.appendChild(div);
+  });
+}
+
+loadUser();
+loadRules();
+</script>
+
+</body>
+</html>

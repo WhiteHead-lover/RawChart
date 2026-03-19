@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>작성</title>
+
+<style>
+body{
+  background:#0f172a;
+  color:white;
+  font-family:sans-serif;
+  padding:20px;
+}
+
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:none;
+}
+
+textarea{
+  height:200px;
+  resize:none;
+}
+
+button{
+  padding:15px 20px;
+  border:none;
+  border-radius:10px;
+  background:#3b82f6;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>✏️ 규칙 작성</h1>
+
+<input id="title" placeholder="제목 입력">
+
+<!-- 🔥 줄바꿈 되는 입력칸 -->
+<textarea id="content" placeholder="내용 입력 (Enter로 줄바꿈 가능)"></textarea>
+
+<!-- 🔥 저장 버튼 -->
+<button onclick="save()">저장</button>
+
+<script>
+async function save(){
+  const title = document.getElementById("title").value;
+  const content = document.getElementById("content").value;
+
+  if(!title || !content){
+    alert("제목/내용 입력해라");
+    return;
+  }
+
+  const res = await fetch("/rules",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      title: title,
+      content: content
+    })
+  });
+
+  if(res.ok){
+    location.href = "/";
+  }else{
+    alert("저장 실패");
+  }
+}
+</script>
+
+</body>
+</html>
