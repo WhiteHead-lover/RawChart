@@ -1,3 +1,6 @@
+console.log("CLIENT_ID:", process.env.DISCORD_CLIENT_ID);
+console.log("CLIENT_SECRET:", process.env.DISCORD_CLIENT_SECRET);
+
 console.log("🔥 서버 시작됨");
 
 const express = require("express");
