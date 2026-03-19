@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1 id="title"></h1>
+
+<!-- 🔥 줄바꿈 출력 핵심 -->
+<p id="content" style="white-space:pre-wrap;"></p>
+
+<button id="editBtn" style="display:none;">수정</button>
+<button id="deleteBtn" style="display:none;">삭제</button>
+
+<script>
+const ADMIN = "noob_love.";
+const id = new URLSearchParams(location.search).get("id");
+
+async function load(){
+  const res = await fetch("/rules/"+id);
+  const data = await res.json();
+
+  title.innerText = data.title;
+  content.innerText = data.content;
+
+  const userRes = await fetch("/me");
+  const user = await userRes.json();
+
+  if(user && user.username === ADMIN){
+
+    editBtn.style.display="inline";
+    deleteBtn.style.display="inline";
+
+    // 🔥🔥🔥 여기다 넣는거 맞다
+    editBtn.onclick = () => {
+      location.href = "edit.html?id=" + id;
+    };
+
+    deleteBtn.onclick = async () => {
+      await fetch("/rules/"+id,{method:"DELETE"});
+      location.href="/";
+    };
+  }
+}
+
+load();
+</script>
+
+</body>
+</html>
