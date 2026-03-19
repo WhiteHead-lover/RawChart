@@ -10,10 +10,12 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// 🔥 Render 필수 설정
+app.set("trust proxy", 1);
+
 // ✅ DB
 const db = new Database("rules.db");
 
-// 테이블 생성
 db.prepare(`
 CREATE TABLE IF NOT EXISTS rules (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,42 +31,44 @@ CREATE TABLE IF NOT EXISTS rules (
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔥 public 경로 안정화 (이게 핵심)
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
-// ✅ 세션
+// ✅ 세션 (🔥 핵심)
 app.use(session({
-  secret: "YOUR_SECRET_HERE", // 🔥 바꿔라
+  secret: process.env.SESSION_SECRET || "dev-secret",
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  cookie: {
+    secure: true,      // Render HTTPS라 true
+    sameSite: "none"   // OAuth 필수
+  }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ passport 설정
+// ✅ passport
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 passport.use(new DiscordStrategy({
-  clientID: "1483478549435388004",
-  clientSecret: "jV5S9ZIwgpk27cU4OFNIB1lm0Q-__2tv",
+  clientID: process.env.1483478549435388004,
+  clientSecret: process.env.jV5S9ZIwgpk27cU4OFNIB1lm0Q-__2tv,
   callbackURL: "https://rawchart.onrender.com/auth/discord/callback",
   scope: ["identify"]
 }, (accessToken, refreshToken, profile, done) => {
   return done(null, profile);
 }));
 
-// ✅ 관리자 체크
+// ✅ 관리자
 const ADMIN_NAME = "noob_love.";
 function isAdmin(req, res, next) {
   if (req.user && req.user.username === ADMIN_NAME) return next();
   res.status(403).send("권한 없음");
 }
 
-// ✅ 루트 (🔥 무조건 index.html 찾게)
+// ✅ 루트
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
@@ -82,7 +86,7 @@ app.get("/logout", (req, res) => {
   req.logout(() => res.redirect("/"));
 });
 
-// ✅ 유저 정보
+// ✅ 유저
 app.get("/me", (req, res) => {
   res.json(req.user || null);
 });
