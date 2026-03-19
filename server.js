@@ -1,16 +1,16 @@
 console.log("🔥 서버 시작됨");
 
 const express = require("express");
-const Database = require("better-sqlite3"); // 🔥 변경
+const Database = require("better-sqlite3");
 const session = require("express-session");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 10000; // 🔥 Render용
+const PORT = process.env.PORT || 10000;
 
-// 🔥 DB (better-sqlite3)
+// ✅ DB
 const db = new Database("rules.db");
 
 // 테이블 생성
@@ -25,46 +25,51 @@ CREATE TABLE IF NOT EXISTS rules (
 )
 `).run();
 
-// 미들웨어
+// ✅ 미들웨어
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
+// 🔥 public 경로 안정화 (이게 핵심)
+const publicPath = path.join(__dirname, "public");
+app.use(express.static(publicPath));
+
+// ✅ 세션
 app.use(session({
-  secret: "secret",
+  secret: "YOUR_SECRET_HERE", // 🔥 바꿔라
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: { secure: false }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// passport
+// ✅ passport 설정
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 passport.use(new DiscordStrategy({
   clientID: "1483478549435388004",
-  clientSecret: "AJF84FuD1pMsaEjxbFMoUnn8p8CJHbo_",
+  clientSecret: "jV5S9ZIwgpk27cU4OFNIB1lm0Q-__2tv",
   callbackURL: "https://rawchart.onrender.com/auth/discord/callback",
   scope: ["identify"]
 }, (accessToken, refreshToken, profile, done) => {
   return done(null, profile);
 }));
 
-// 관리자
+// ✅ 관리자 체크
 const ADMIN_NAME = "noob_love.";
 function isAdmin(req, res, next) {
   if (req.user && req.user.username === ADMIN_NAME) return next();
   res.status(403).send("권한 없음");
 }
 
-// 루트
+// ✅ 루트 (🔥 무조건 index.html 찾게)
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(publicPath, "index.html"));
 });
 
-// 로그인
+// ✅ 로그인
 app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get("/auth/discord/callback",
@@ -72,17 +77,17 @@ app.get("/auth/discord/callback",
   (req, res) => res.redirect("/")
 );
 
-// 로그아웃
+// ✅ 로그아웃
 app.get("/logout", (req, res) => {
   req.logout(() => res.redirect("/"));
 });
 
-// 유저
+// ✅ 유저 정보
 app.get("/me", (req, res) => {
   res.json(req.user || null);
 });
 
-// 목록
+// ✅ 목록
 app.get("/rules", (req, res) => {
   const search = req.query.search || "";
   const rows = db.prepare(
@@ -91,7 +96,7 @@ app.get("/rules", (req, res) => {
   res.json(rows);
 });
 
-// 추가
+// ✅ 추가
 app.post("/rules", (req, res) => {
   const { title, content } = req.body;
   if (!title || !content) return res.status(400).send("값 없음");
@@ -105,7 +110,7 @@ app.post("/rules", (req, res) => {
   res.json({ id: result.lastInsertRowid });
 });
 
-// 수정
+// ✅ 수정
 app.put("/rules/:id", isAdmin, (req, res) => {
   const { title, content } = req.body;
   const now = new Date().toISOString();
@@ -119,13 +124,13 @@ app.put("/rules/:id", isAdmin, (req, res) => {
   res.send("수정 완료");
 });
 
-// 삭제
+// ✅ 삭제
 app.delete("/rules/:id", isAdmin, (req, res) => {
   db.prepare("DELETE FROM rules WHERE id=?").run(req.params.id);
   res.send("삭제 완료");
 });
 
-// 상세
+// ✅ 상세
 app.get("/rules/:id", (req, res) => {
   const row = db.prepare(
     "SELECT * FROM rules WHERE id=?"
@@ -135,7 +140,7 @@ app.get("/rules/:id", (req, res) => {
   res.json(row);
 });
 
-// 서버 실행
+// ✅ 서버 실행
 app.listen(PORT, () => {
   console.log("서버 실행:", PORT);
 });
