@@ -57,8 +57,8 @@ passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 passport.use(new DiscordStrategy({
-  clientID: process.env.1483478549435388004,
-  clientSecret: process.env.jV5S9ZIwgpk27cU4OFNIB1lm0Q-__2tv,
+  clientID: process.env.DISCORD_CLIENT_ID,
+  clientSecret: process.env.DISCORD_CLIENT_SECRET,
   callbackURL: "https://rawchart.onrender.com/auth/discord/callback",
   scope: ["identify"]
 }, (accessToken, refreshToken, profile, done) => {
