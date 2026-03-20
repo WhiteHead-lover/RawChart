@@ -1,11 +1,4 @@
-require("fs").writeFileSync("start.txt", "서버 실행됨");
 console.log("🔥 서버 시작됨");
-
-console.log("force deploy");
-console.log("CLIENT_ID:", process.env.DISCORD_CLIENT_ID);
-console.log("CLIENT_SECRET:", process.env.DISCORD_CLIENT_SECRET);
-
-console.log("🔥 서버 시작됨2");
 
 const express = require("express");
 const Database = require("better-sqlite3");
@@ -17,12 +10,14 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// 🔥 Render 필수 설정
-app.set("trust proxy", 1);
+// ✅ ENV 확인 로그
+console.log("CLIENT_ID:", process.env.DISCORD_CLIENT_ID);
+console.log("CALLBACK:", process.env.CALLBACK_URL);
 
 // ✅ DB
 const db = new Database("rules.db");
 
+// 테이블 생성
 db.prepare(`
 CREATE TABLE IF NOT EXISTS rules (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,17 +33,18 @@ CREATE TABLE IF NOT EXISTS rules (
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// static
 const publicPath = path.join(__dirname, "public");
 app.use(express.static(publicPath));
 
-// ✅ 세션 (🔥 핵심)
+// ✅ 세션 (🔥 핵심 설정)
 app.use(session({
-  secret: process.env.SESSION_SECRET || "dev-secret",
+  secret: process.env.SESSION_SECRET || "secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,      // Render HTTPS라 true
-    sameSite: "none"   // OAuth 필수
+    secure: true,       // Render는 https
+    sameSite: "none"
   }
 }));
 
@@ -62,10 +58,16 @@ passport.deserializeUser((obj, done) => done(null, obj));
 passport.use(new DiscordStrategy({
   clientID: process.env.DISCORD_CLIENT_ID,
   clientSecret: process.env.DISCORD_CLIENT_SECRET,
-  callbackURL: "https://rawchart.onrender.com/auth/discord/callback",
+  callbackURL: process.env.CALLBACK_URL,
   scope: ["identify"]
 }, (accessToken, refreshToken, profile, done) => {
-  return done(null, profile);
+  try {
+    console.log("로그인 성공:", profile.username);
+    return done(null, profile);
+  } catch (err) {
+    console.error("passport 에러:", err);
+    return done(err, null);
+  }
 }));
 
 // ✅ 관리자
@@ -83,10 +85,24 @@ app.get("/", (req, res) => {
 // ✅ 로그인
 app.get("/auth/discord", passport.authenticate("discord"));
 
-app.get("/auth/discord/callback",
-  passport.authenticate("discord", { failureRedirect: "/" }),
-  (req, res) => res.redirect("/")
-);
+// ✅ callback (🔥 완전 안정형)
+app.get("/auth/discord/callback", (req, res, next) => {
+  passport.authenticate("discord", (err, user) => {
+    if (err) {
+      console.error("OAuth 에러:", err);
+      return res.send("로그인 실패 (서버 에러)");
+    }
+    if (!user) return res.redirect("/");
+
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error("세션 저장 에러:", err);
+        return res.send("세션 에러");
+      }
+      return res.redirect("/");
+    });
+  })(req, res, next);
+});
 
 // ✅ 로그아웃
 app.get("/logout", (req, res) => {
