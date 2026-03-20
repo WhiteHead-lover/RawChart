@@ -1,8 +1,11 @@
+require("fs").writeFileSync("start.txt", "서버 실행됨");
+console.log("🔥 서버 시작됨");
+
 console.log("force deploy");
 console.log("CLIENT_ID:", process.env.DISCORD_CLIENT_ID);
 console.log("CLIENT_SECRET:", process.env.DISCORD_CLIENT_SECRET);
 
-console.log("🔥 서버 시작됨");
+console.log("🔥 서버 시작됨2");
 
 const express = require("express");
 const Database = require("better-sqlite3");
